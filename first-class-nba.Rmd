@@ -1,0 +1,93 @@
+---
+title: "NBA EDA"
+output: html_notebook
+---
+
+```{r setup}
+# Packages ----
+library(tidyverse)
+library(lubridate)
+```
+
+# Data
+This data...
+
+```{r data}
+nba_data <- read_csv("data/nba-players.csv",
+                     col_types = "iccicccciiccd") %>% 
+  janitor::clean_names(case = "snake")
+```
+
+Names of data
+
+```{r}
+names(nba_data)
+```
+
+What are our column types
+
+```{r}
+map_df(nba_data, class) %>% 
+  gather(key = column_name, value = class)
+```
+
+### Date
+
+```{r}
+head(nba_data)
+```
+
+```{r}
+some_dates <- head(nba_data$date)
+
+some_dates
+mdy(some_dates)
+```
+
+```{r}
+nba_data <- nba_data %>% 
+  mutate(date = mdy(date))
+```
+
+```{r}
+head(nba_data)
+```
+
+### Height
+Height is given in feet and inches, we want just inches!!!
+
+```{r}
+some_heights <- head(nba_data)$height
+some_heights
+
+str_split(some_heights, "-") %>% 
+  map(as.numeric) %>% 
+  map_dbl(~.[1]*12 + .[2])
+
+str_split(some_heights, "-") %>% 
+  map(as.numeric) %>% 
+  map_dbl(function(x) x[1]*12 + x[2])
+```
+
+```{r}
+nba_data <- nba_data %>% 
+  mutate(inches = map_dbl(height, ~str_split(., "-") %>% map(as.numeric) %>% map_dbl(~.[1] * 12 + .[2])))
+```
+
+```{r}
+summary(nba_data$inches)
+
+nba_data %>% 
+  filter(is.na(inches)) %>% 
+  select(inches, height)
+```
+
+Visualize distribution of height by position
+
+```{r}
+nba_data %>% 
+  filter(!is.na(inches)) %>% 
+  ggplot(aes(x = inches, col = position)) +
+  geom_density()
+```
+
